@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+         http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+         http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+
+  <bean id="cacheManager" class="org.infinispan.manager.DefaultCacheManager" init-method="start" destroy-method="stop">
+    <argument ref="globalCacheConfiguration" type="org.infinispan.configuration.global.GlobalConfiguration" index="0"></argument>
+    <argument ref="cacheConfiguration" type="org.infinispan.configuration.cache.Configuration" index="1"/>
+  </bean>
+
+  <bean id="gloabal-configuration-builder" class="org.infinispan.configuration.global.GlobalConfigurationBuilder"/>
+
+  <bean id="configuration-builder" class="org.infinispan.configuration.cache.ConfigurationBuilder"/>
+
+  <bean id="cacheConfiguration" class="org.infinispan.configuration.cache.Configuration"
+        factory-ref="configuration-builder" factory-method="build"/>
+
+  <bean id="globalCacheConfiguration" class="org.infinispan.configuration.global.GlobalConfiguration"
+        factory-ref="gloabal-configuration-builder" factory-method="build"/>
+
+
+  <camelContext id="blueprint-bean-context" xmlns="http://camel.apache.org/schema/blueprint">
+      <route>
+        <from uri="infinispan?cacheContainer=#cacheManager&amp;sync=false&amp;eventTypes=CACHE_ENTRY_REMOVED"/>
+        <to uri="mock:remove"/>
+      </route>
+      <route>
+        <from uri="infinispan?cacheContainer=#cacheManager&amp;sync=false&amp;eventTypes=CACHE_ENTRY_CREATED"/>
+        <to uri="mock:create"/>
+      </route>
+      <route>
+        <from uri="infinispan?cacheContainer=#cacheManager&amp;sync=false&amp;eventTypes=CACHE_ENTRY_MODIFIED"/>
+        <to uri="mock:update"/>
+      </route>
+      <route>
+        <from uri="infinispan?cacheContainer=#cacheManager&amp;sync=false&amp;eventTypes=CACHE_ENTRY_VISITED"/>
+        <to uri="mock:visit"/>
+      </route>
+    </camelContext>
+
+</blueprint>
